@@ -1,34 +1,67 @@
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-public class AudioCutscenePlayer : MonoBehaviour
-{
-    public AudioClip audioClip;
-    public string nextSceneName = "Main";
-    private AudioSource audioSource;
-    void Start()
-    {
-     audioSource=GetComponent<AudioSource>();
-        if(audioSource == null )
-        {
-            LoadNextScene();
-                return;
-        }
-        audioSource.playOnAwake = false;
-        audioSource.clip = audioClip;
-        audioSource.loop = false;
-        audioSource.spatialBlend = 0f;
-        audioSource.Play();
-    }
 
-    // Update is called once per frame
-    void Update()
+[System.Serializable]
+public class Sound
+{
+    public string name;
+    public AudioClip clip;
+    [Range(0f, 1f)] public float volume=1f;
+    [Range (0f, 1f)]public float pitch = 1f;
+    public bool loop=false;
+    [HideInInspector]public AudioSource source;
+}
+
+/// <summary>
+/// ゲーム内のすべてのオーディオを管理するシングルトンクラス
+/// </summary>
+public class AudioManager : MonoBehaviour
+{
+    public static AudioManager instance;
+    public List<Sound> sounds;
+    
+    private void Awake()
     {
-        if (audioSource.time > 0 && !audioSource.isPlaying)
-            LoadNextScene();
+        // シングルトンの設定
+        if(instance == null)
+        {
+            instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+        
+        // 各サウンドにAudioSourceコンポーネントを追加
+        foreach(Sound s in sounds)
+        {
+            s.source=gameObject.AddComponent<AudioSource>();
+            s.source.clip=s.clip;
+            s.source.volume=s.volume;
+            s.source.pitch=s.pitch;
+            s.source.loop=s.loop;
+        }
     }
-    void LoadNextScene()
+    
+    public void Play(string name)
     {
-        this.enabled = false;
-        SceneManager.LoadScene(nextSceneName);
+        Sound s=sounds.Find(sound=>sound.name==name);
+        if(s==null)return;
+        s.source.Play();
+    }
+    
+    public void Stop(string name)
+    {
+        Sound s=sounds.Find (sound=>sound.name==name);
+        if(s==null)return;
+        s.source.Stop();
+    }
+    
+    public bool isPlaying(string name)
+    {
+        Sound s=sounds.Find(sounds=>sounds.name==name);
+        return s!=null&&s.source.isPlaying;
     }
 }

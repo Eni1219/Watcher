@@ -1,76 +1,88 @@
 using UnityEngine;
 using System.Collections;
 
-public class RotatableObject : MonoBehaviour
-{
-    public enum Axis { X, Y, Z } 
-
-    public Axis rotationAxis = Axis.Y; 
-    public float targetAngle = -100.0f;
-    public float rotationDuration = 1.0f;
-    public string rotationSoundName;
-    public GameObject Key;
-    private Quaternion initialRotation;
-    private bool isRotating = false;
-    private Coroutine rotationCoroutine;
-
-    void Awake()
+    /// <summary>
+    /// オブジェクトを回転させるクラス
+    /// 指定した軸と角度に基づいてスムーズに回転し、鍵を表示する
+    /// </summary>
+    public class RotatableObject : MonoBehaviour
     {
-        initialRotation = transform.rotation;
-    }
-    private void Start()
-    {
-        Key.SetActive(false);
-    }
+        public enum Axis { X, Y, Z } 
 
-    public void TriggerRotation()
-    {
-        if (isRotating)
-           return;
+        public Axis rotationAxis = Axis.Y;
+        public float targetAngle = -100.0f;
+        public float rotationDuration = 1.0f;
+        public string rotationSoundName;
+        public GameObject Key;
+        
+        private Quaternion initialRotation;
+        private bool isRotating = false;
+        private Coroutine rotationCoroutine;
 
-
-        AudioManager.instance.Play("Unlock");
-        rotationCoroutine = StartCoroutine(RotateSequence());
-        Key.SetActive(true);
-    }
-
-    private IEnumerator RotateSequence()
-    {
-        isRotating = true; 
-
-        Quaternion startRotation = transform.rotation; 
-        Quaternion targetRotation;
-
-        switch (rotationAxis)
+        void Awake()
         {
-            case Axis.X:
-                targetRotation = initialRotation * Quaternion.Euler(targetAngle, 0, 0);
-                break;
-            case Axis.Y:
-                targetRotation = initialRotation * Quaternion.Euler(0, targetAngle, 0);
-                break;
-            case Axis.Z:
-                targetRotation = initialRotation * Quaternion.Euler(0, 0, targetAngle);
-                break;
-            default:
-                targetRotation = startRotation;
-                break;
+            initialRotation = transform.rotation;
+        }
+        
+        private void Start()
+        {
+            Key.SetActive(false);
         }
 
-        float timer = 0f;
-        while (timer < rotationDuration)
+        /// <summary>
+        /// 回転をトリガー
+        /// </summary>
+        public void TriggerRotation()
         {
-            timer += Time.deltaTime;
-            float t = Mathf.Clamp01(timer / rotationDuration);
-            transform.rotation = Quaternion.Slerp(startRotation, targetRotation, t);
-            yield return null;
+            if (isRotating)
+               return;
+
+            AudioManager.instance.Play("Unlock");
+            rotationCoroutine = StartCoroutine(RotateSequence());
+            Key.SetActive(true);
         }
 
-        transform.rotation = targetRotation;
+        /// <summary>
+        /// 回転シーケンス
+        /// </summary>
+        private IEnumerator RotateSequence()
+        {
+            isRotating = true; 
 
-        isRotating = false; 
-        rotationCoroutine = null; 
+            Quaternion startRotation = transform.rotation; 
+            Quaternion targetRotation;
 
-         this.enabled = false;
+            // 回転軸に基づいて目標回転を計算
+            switch (rotationAxis)
+            {
+                case Axis.X:
+                    targetRotation = initialRotation * Quaternion.Euler(targetAngle, 0, 0);
+                    break;
+                case Axis.Y:
+                    targetRotation = initialRotation * Quaternion.Euler(0, targetAngle, 0);
+                    break;
+                case Axis.Z:
+                    targetRotation = initialRotation * Quaternion.Euler(0, 0, targetAngle);
+                    break;
+                default:
+                    targetRotation = startRotation;
+                    break;
+            }
+
+            // スムーズな回転を実行
+            float timer = 0f;
+            while (timer < rotationDuration)
+            {
+                timer += Time.deltaTime;
+                float t = Mathf.Clamp01(timer / rotationDuration);
+                transform.rotation = Quaternion.Slerp(startRotation, targetRotation, t);
+                yield return null;
+            }
+
+            transform.rotation = targetRotation;
+
+            isRotating = false; 
+            rotationCoroutine = null; 
+            this.enabled = false;
+        }
     }
-}

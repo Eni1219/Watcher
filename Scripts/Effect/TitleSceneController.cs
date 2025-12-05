@@ -2,18 +2,20 @@ using UnityEngine;
 using UnityEngine.SceneManagement; 
 using UnityEngine.UI; 
 
+/// <summary>
+/// タイトル画面を制御するクラス
+/// </summary>
 public class TitleSceneController : MonoBehaviour
 {
     public Button startButton;
     public Button quitButton;
-
-    public string firstGameSceneName = "Main"; 
+    public string firstGameSceneName = "Main";
+    
     void Start()
     {
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-      
         if (startButton != null)
         {
             startButton.onClick.AddListener(StartGame);

@@ -11,9 +11,9 @@ public class WorldSwitcher : MonoBehaviour
     public Material monitorEffectMaterial;
     public TaskManager taskManagerA;
 
+    // キープロンプトUI
     public GameObject keyPromptsPanel;
     public TextMeshProUGUI[] keyPrompts;
-
     public Color promptNormalColor = new Color(1, 1, 1);
     public Color promptHighLightColor = Color.black;
     public float promptFlashDur = .2f;
@@ -23,14 +23,18 @@ public class WorldSwitcher : MonoBehaviour
     private bool isRealMonitoring = false;
     public GameObject pressIUI;
     public GameObject globalVolume;
+    
+    // トランジション設定
     public Transform PosA;
     public Transform PosB;
     public float transitionDur = 3f;
     private Coroutine currentTransition;
 
+    // コントローラー参照
     public CameraController monitorController;
     public PlayerController playerController;
     public MonitorPlayerController monitorPlayerController;
+    
     void Start()
     {
         SetMonitoringMode(true);
@@ -40,6 +44,7 @@ public class WorldSwitcher : MonoBehaviour
 
     void Update()
     {
+        // 現実モード時のUI表示制御
         if (!isMonitoring && playerController != null)
         {
             if (playerController.isLookingAtComputer)
@@ -47,12 +52,14 @@ public class WorldSwitcher : MonoBehaviour
             else
                 pressIUI.SetActive(false);
         }
+        
+        // モード切り替え
         if (Input.GetKeyDown(KeyCode.I))
         {
             TrySwitchMode();
-
         }
 
+        // モニターモード時のカメラ切り替え(1-6キー)
         if (isMonitoring)
         {
             if (Input.GetKeyDown(KeyCode.Alpha1))
@@ -75,7 +82,6 @@ public class WorldSwitcher : MonoBehaviour
                 monitorController.SwitchTo(3);
                 FlashKey(3);
             }
-
             if (Input.GetKeyDown(KeyCode.Alpha5))
             {
                 monitorController.SwitchTo(4);
@@ -86,10 +92,12 @@ public class WorldSwitcher : MonoBehaviour
                 monitorController.SwitchTo(5);
                 FlashKey(5);
             }
-
         }
-
     }
+    
+    /// <summary>
+    /// キープロンプトを点滅させる
+    /// </summary>
     void FlashKey(int index)
     {
         if (keyPrompts == null || index < 0 || index >= keyPrompts.Length || keyPrompts[index]==null)
@@ -98,30 +106,36 @@ public class WorldSwitcher : MonoBehaviour
             StopCoroutine(flashCoroutines[index]);
 
         flashCoroutines[index] = StartCoroutine(FlashKeyCoroutine(keyPrompts[index]));
-
     }
+    
+    /// <summary>
+    /// モード切り替えを試みる
+    /// タスク完了状態とプレイヤー位置をチェック
+    /// </summary>
     private void TrySwitchMode()
     {
         if (isMonitoring)
         {
+            // すべてのタスクが完了している場合のみ現実モードへ
             if (taskManagerA != null && taskManagerA.currentTask == TaskManager.TaskState.AllTasksCompleted)
             {
-              
                 SetMonitoringMode(false);
             }
-         
         }
         else
         {
-
-           
+            // コンピューターを見ている場合のみモニターモードへ
             if(Input.GetKeyDown(KeyCode.I)&&playerController.isLookingAtComputer)
             { 
                 SetMonitoringMode(true);
             }
-
         }
     }
+    
+    /// <summary>
+    /// モニターモードまたは現実モードに設定する
+    /// カメラ、コントローラー、UIの状態を切り替える
+    /// </summary>
     void SetMonitoringMode(bool v)
     {
         isMonitoring = v;
@@ -129,9 +143,12 @@ public class WorldSwitcher : MonoBehaviour
         playerController.enabled=!v;
         monitorController.enabled = v;
         monitorPlayerController.enabled = v;
+        
         if (monitorImage == null) return;
+        
         if (v)
         {
+            // モニターモードに入る
             Debug.Log("Enter MoritoringMode");
             monitorImage.enabled = true;
             if ( monitorEffectMaterial != null)
@@ -147,10 +164,10 @@ public class WorldSwitcher : MonoBehaviour
                     if (prompt != null) prompt.color = promptNormalColor;
                 }
             }
-
         }
         else
         {
+            // 現実モードに戻る
             Debug.Log("Back To Reality");
             mainCam.transform.SetPositionAndRotation(playCamPos.position+new Vector3(0,.5f,0), playCamPos.rotation);
             monitorImage.enabled = false;
@@ -160,10 +177,13 @@ public class WorldSwitcher : MonoBehaviour
                 keyPromptsPanel.SetActive(false);
             StartCoroutine(TransitionToReality());
         }
-        }
+    }
+    
+    /// <summary>
+    /// 現実モードへのスムーズなカメラトランジション
+    /// </summary>
     private IEnumerator TransitionToReality()
     {
-       // monitor off
         if (monitorPlayerController != null) monitorPlayerController.enabled = false;
         if (monitorController != null) monitorController.enabled = false;
 
@@ -173,9 +193,8 @@ public class WorldSwitcher : MonoBehaviour
         float timer = 0f;
         while (timer < transitionDur)
         {
-
             float t = timer / transitionDur;
-     
+            // スムーズステップ補間
             t = t * t * (3f - 2f * t);
             mainCam.transform.position = Vector3.Lerp(startPos, endPos, t);
 
@@ -189,6 +208,7 @@ public class WorldSwitcher : MonoBehaviour
 
         currentTransition = null;
     }
+    
     private IEnumerator FlashKeyCoroutine(TextMeshProUGUI keyTest)
     {
         keyTest.color=promptHighLightColor;
